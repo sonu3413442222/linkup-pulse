@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import CreatePost from './CreatePost';
 import PostCard from './PostCard';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, PenSquare } from 'lucide-react';
 
 interface FeedProps {
   user: any;

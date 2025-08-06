@@ -17,26 +17,41 @@ const Feed = ({ user }: FeedProps) => {
 
   const fetchPosts = async () => {
     try {
-      const { data, error } = await supabase
+      // First get posts
+      const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select(`
-          *,
-          profiles (
-            full_name,
-            email,
-            bio
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching posts:', error);
+      if (postsError) {
+        console.error('Error fetching posts:', postsError);
         toast.error('Failed to load posts');
         return;
       }
 
-      console.log('Posts fetched:', data);
-      setPosts(data || []);
+      // Then get profiles for the users who made these posts
+      const userIds = [...new Set(postsData?.map(post => post.user_id) || [])];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+
+      // Combine posts with profile data
+      const postsWithProfiles = postsData?.map(post => ({
+        ...post,
+        profiles: profilesData?.find(profile => profile.id === post.user_id) || {
+          full_name: 'Anonymous User',
+          email: 'unknown@email.com',
+          bio: ''
+        }
+      })) || [];
+
+      console.log('Posts with profiles:', postsWithProfiles);
+      setPosts(postsWithProfiles);
     } catch (error) {
       console.error('Unexpected error:', error);
       toast.error('Failed to load posts');

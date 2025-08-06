@@ -75,9 +75,9 @@ const ProfilePage = ({ user }: ProfilePageProps) => {
       const postsWithProfile = data?.map(post => ({
         ...post,
         profiles: profile || {
-          full_name: user.user_metadata?.full_name || 'Unknown User',
+          full_name: user.user_metadata?.full_name || profile?.full_name || 'Unknown User',
           email: user.email,
-          bio: ''
+          bio: profile?.bio || ''
         }
       })) || [];
 
@@ -123,10 +123,15 @@ const ProfilePage = ({ user }: ProfilePageProps) => {
   useEffect(() => {
     if (user) {
       fetchProfile();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user && profile !== undefined) {
       fetchUserPosts();
       fetchStats();
     }
-  }, [user]);
+  }, [user, profile]);
 
   const handleUpdateProfile = async () => {
     try {
@@ -156,6 +161,7 @@ const ProfilePage = ({ user }: ProfilePageProps) => {
   const handlePostDeleted = (postId: string) => {
     setPosts(prev => prev.filter(post => post.id !== postId));
     setStats(prev => ({ ...prev, posts: prev.posts - 1 }));
+    toast.success('Post deleted successfully!');
   };
 
   if (isLoading) {
@@ -223,10 +229,30 @@ const ProfilePage = ({ user }: ProfilePageProps) => {
                     <span>{user.email}</span>
                   </div>
                   
-                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border-l-4 border-blue-500">
-                    <p className="text-gray-700 leading-relaxed">
-                      {profile?.bio || 'Share your story! Add a bio to tell people about your journey, interests, and aspirations. ✨'}
-                    </p>
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border-l-4 border-blue-500 shadow-sm">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2 text-blue-600">
+                        <Users className="w-5 h-5" />
+                        <span className="font-semibold">About Me</span>
+                      </div>
+                      <p className="text-gray-700 leading-relaxed text-lg">
+                        {profile?.bio || 
+                         `🌟 Welcome to my profile! I'm passionate about connecting with amazing people and sharing meaningful conversations. 
+                         \n\n💼 Always learning, always growing, and excited to be part of this incredible community. 
+                         \n\n🚀 Let's connect and create something amazing together!`
+                        }
+                      </p>
+                      <div className="flex items-center space-x-4 text-sm text-gray-500 pt-2 border-t border-blue-200">
+                        <div className="flex items-center space-x-1">
+                          <Calendar className="w-4 h-4" />
+                          <span>Joined {new Date(profile?.created_at || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <MapPin className="w-4 h-4" />
+                          <span>Global Community</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -248,7 +274,7 @@ const ProfilePage = ({ user }: ProfilePageProps) => {
                       value={editForm.bio}
                       onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
                       placeholder="Tell us about yourself, your interests, goals..."
-                      rows={4}
+                      rows={6}
                       className="text-lg border-2 focus:border-blue-500 transition-colors resize-none"
                     />
                   </div>

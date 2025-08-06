@@ -3,6 +3,8 @@ import React from 'react';
 import { User, LogOut, Home, User as UserIcon, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface HeaderProps {
   user: any;
@@ -12,6 +14,20 @@ interface HeaderProps {
 }
 
 const Header = ({ user, onLogout, currentPage, onNavigate }: HeaderProps) => {
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        toast.error('Error logging out');
+        return;
+      }
+      toast.success('Logged out successfully!');
+      onLogout();
+    } catch (error) {
+      toast.error('Error logging out');
+    }
+  };
+
   return (
     <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 transition-all duration-300">
       <div className="max-w-6xl mx-auto px-4 py-3">
@@ -56,7 +72,7 @@ const Header = ({ user, onLogout, currentPage, onNavigate }: HeaderProps) => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={onLogout}
+                onClick={handleLogout}
                 className="text-gray-600 hover:text-red-600 transition-colors duration-200"
               >
                 <LogOut size={18} />

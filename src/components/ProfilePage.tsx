@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,19 +12,21 @@ import { toast } from 'sonner';
 import { 
   Edit, Save, X, MapPin, Calendar, Briefcase, Users, 
   Star, Award, TrendingUp, Activity, Camera, Settings,
-  Globe, LinkIcon, Mail
+  Globe, LinkIcon, Mail, Trash2
 } from 'lucide-react';
 
 interface ProfilePageProps {
   user: any;
+  isOwnProfile?: boolean;
 }
 
-const ProfilePage = ({ user }: ProfilePageProps) => {
+const ProfilePage = ({ user, isOwnProfile = true }: ProfilePageProps) => {
   const [profile, setProfile] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ full_name: '', bio: '' });
   const [isLoading, setIsLoading] = useState(true);
+  const [isFollowing, setIsFollowing] = useState(false);
   const [stats, setStats] = useState({
     posts: 0,
     connections: 0,
@@ -164,6 +165,21 @@ const ProfilePage = ({ user }: ProfilePageProps) => {
     toast.success('Post deleted successfully!');
   };
 
+  const handleFollow = async () => {
+    try {
+      setIsFollowing(!isFollowing);
+      toast.success(isFollowing ? 'Unfollowed successfully!' : 'Following now!');
+      // Update stats when following/unfollowing
+      setStats(prev => ({
+        ...prev,
+        followers: isFollowing ? prev.followers - 1 : prev.followers + 1
+      }));
+    } catch (error) {
+      toast.error('Failed to update follow status');
+      setIsFollowing(!isFollowing); // Revert on error
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -179,237 +195,251 @@ const ProfilePage = ({ user }: ProfilePageProps) => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      {/* Enhanced Profile Header */}
-      <AnimatedCard className="overflow-hidden">
-        <div className="relative h-48 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600">
-          {/* Animated background pattern */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 animate-pulse"></div>
-          <div className="absolute inset-0">
-            <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full animate-float"></div>
-            <div className="absolute top-20 right-20 w-16 h-16 bg-white/10 rounded-full animate-float" style={{ animationDelay: '1s' }}></div>
-            <div className="absolute bottom-10 left-1/3 w-12 h-12 bg-white/10 rounded-full animate-float" style={{ animationDelay: '2s' }}></div>
-          </div>
-          
-          {/* Camera button for cover photo */}
-          <button className="absolute top-4 right-4 p-3 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-all duration-300 hover:scale-110">
-            <Camera className="w-5 h-5 text-white" />
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white p-4 lg:p-8">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Profile Header Card */}
+        <AnimatedCard className="bg-slate-800/50 backdrop-blur-sm border-slate-700 overflow-hidden">
+          <CardContent className="p-6 lg:p-8">
+            <div className="flex flex-col lg:flex-row items-start space-y-6 lg:space-y-0 lg:space-x-8">
+              {/* Avatar Section */}
+              <div className="relative group flex-shrink-0">
+                <Avatar className="w-24 h-24 lg:w-32 lg:h-32 border-4 border-blue-500/50 shadow-2xl transition-all duration-300 group-hover:scale-105">
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-2xl lg:text-4xl">
+                    {profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || 
+                     user.email?.charAt(0).toUpperCase() || '?'}
+                  </AvatarFallback>
+                </Avatar>
+                {/* Pro Badge */}
+                <div className="absolute -bottom-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                  Pro
+                </div>
+                {/* Online indicator */}
+                <div className="absolute top-1 right-1 w-5 h-5 bg-green-400 border-2 border-slate-800 rounded-full animate-pulse"></div>
+              </div>
 
-        <CardContent className="px-8 pb-8">
-          <div className="flex flex-col lg:flex-row items-start lg:items-end space-y-6 lg:space-y-0 lg:space-x-8 -mt-16">
-            {/* Enhanced Avatar */}
-            <div className="relative group">
-              <Avatar className="w-32 h-32 border-6 border-white shadow-2xl ring-4 ring-blue-200/50 transition-all duration-300 group-hover:scale-105">
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-4xl">
-                  {profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || 
-                   user.email?.charAt(0).toUpperCase() || '?'}
-                </AvatarFallback>
-              </Avatar>
-              <button className="absolute bottom-2 right-2 p-2 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 hover:scale-110">
-                <Camera className="w-4 h-4" />
-              </button>
-              {/* Online indicator */}
-              <div className="absolute top-2 right-2 w-6 h-6 bg-green-400 border-3 border-white rounded-full animate-pulse"></div>
-            </div>
-
-            <div className="flex-1 text-center lg:text-left space-y-4">
-              {!isEditing ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-center lg:justify-start space-x-3">
-                    <h1 className="text-4xl font-bold text-gray-900 gradient-text">
-                      {profile?.full_name || 'Add Your Name'}
-                    </h1>
-                    <Award className="w-6 h-6 text-yellow-500" />
-                  </div>
-                  
-                  <div className="flex items-center justify-center lg:justify-start space-x-2 text-gray-600">
-                    <Mail className="w-4 h-4" />
-                    <span>{user.email}</span>
-                  </div>
-                  
-                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border-l-4 border-blue-500 shadow-sm">
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2 text-blue-600">
-                        <Users className="w-5 h-5" />
-                        <span className="font-semibold">About Me</span>
+              {/* Profile Info */}
+              <div className="flex-1 space-y-4 min-w-0">
+                {!isEditing ? (
+                  <div className="space-y-3">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                      <h1 className="text-2xl lg:text-3xl font-bold text-white">
+                        {profile?.full_name || user.email?.split('@')[0] || 'User'}
+                      </h1>
+                      {/* Action buttons - moved to top right on desktop */}
+                      <div className="flex flex-col sm:flex-row gap-2 mt-4 lg:mt-0">
+                        {isOwnProfile ? (
+                          <Button
+                            onClick={() => setIsEditing(true)}
+                            className="bg-slate-700 hover:bg-slate-600 text-white border border-slate-600 hover:border-slate-500 transition-all duration-300 hover:scale-105 px-4 py-2 text-sm rounded-lg"
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              onClick={handleFollow}
+                              className={`transition-all duration-300 hover:scale-105 px-4 py-2 text-sm rounded-lg ${
+                                isFollowing 
+                                  ? 'bg-slate-600 hover:bg-slate-700 text-white border border-slate-500' 
+                                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+                              }`}
+                            >
+                              <Users className="h-4 w-4 mr-2" />
+                              {isFollowing ? 'Following' : 'Follow'}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="border border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300 hover:scale-105 px-4 py-2 text-sm rounded-lg"
+                            >
+                              <Mail className="h-4 w-4 mr-2" />
+                              Message
+                            </Button>
+                          </>
+                        )}
                       </div>
-                      <p className="text-gray-700 leading-relaxed text-lg">
-                        {profile?.bio || 
-                         `🌟 Welcome to my profile! I'm passionate about connecting with amazing people and sharing meaningful conversations. 
-                         \n\n💼 Always learning, always growing, and excited to be part of this incredible community. 
-                         \n\n🚀 Let's connect and create something amazing together!`
-                        }
-                      </p>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500 pt-2 border-t border-blue-200">
+                    </div>
+                    
+                    <div className="space-y-2 text-slate-300">
+                      <p className="text-lg">{profile?.bio || "Welcome to the community!"}</p>
+                      <div className="flex items-center space-x-2 text-sm text-slate-400">
+                        <Mail className="w-4 h-4" />
+                        <span>{user.email}</span>
+                      </div>
+                      <div className="flex items-center space-x-4 text-sm text-slate-400">
                         <div className="flex items-center space-x-1">
                           <Calendar className="w-4 h-4" />
-                          <span>Joined {new Date(profile?.created_at || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+                          <span>Joined about {new Date(profile?.created_at || Date.now()).toLocaleDateString('en-US', { 
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric'
+                          }).includes('2025') ? 'recently' : new Date(profile?.created_at || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <MapPin className="w-4 h-4" />
-                          <span>Global Community</span>
+                          <span>Professional Network</span>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-6 max-w-2xl">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-name" className="text-lg font-semibold text-gray-700">Full Name</Label>
-                    <Input
-                      id="edit-name"
-                      value={editForm.full_name}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
-                      placeholder="Enter your full name"
-                      className="text-lg py-3 border-2 focus:border-blue-500 transition-colors"
-                    />
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-name" className="text-sm font-medium text-slate-200">Full Name</Label>
+                      <Input
+                        id="edit-name"
+                        value={editForm.full_name}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
+                        placeholder="Enter your full name"
+                        className="bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-bio" className="text-sm font-medium text-slate-200">Bio</Label>
+                      <Textarea
+                        id="edit-bio"
+                        value={editForm.bio}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
+                        placeholder="Tell us about yourself..."
+                        rows={3}
+                        className="bg-slate-700 border-slate-600 text-white placeholder-slate-400 focus:border-blue-500 resize-none"
+                      />
+                    </div>
+                    <div className="flex space-x-3">
+                      <Button
+                        onClick={handleUpdateProfile}
+                        className="bg-green-600 hover:bg-green-700 text-white transition-all duration-300 hover:scale-105 px-4 py-2 text-sm rounded-lg"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Save
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setIsEditing(false);
+                          setEditForm({
+                            full_name: profile?.full_name || '',
+                            bio: profile?.bio || ''
+                          });
+                        }}
+                        variant="outline"
+                        className="border border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300 rounded-lg"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Cancel
+                      </Button>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-bio" className="text-lg font-semibold text-gray-700">Bio</Label>
-                    <Textarea
-                      id="edit-bio"
-                      value={editForm.bio}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
-                      placeholder="Tell us about yourself, your interests, goals..."
-                      rows={6}
-                      className="text-lg border-2 focus:border-blue-500 transition-colors resize-none"
-                    />
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex flex-col space-y-3">
-              {!isEditing ? (
-                <div className="flex space-x-3">
-                  <Button
-                    onClick={() => setIsEditing(true)}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105 px-6 py-3 text-lg font-semibold"
-                  >
-                    <Edit className="h-5 w-5 mr-2" />
-                    Edit Profile
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="border-2 border-gray-300 hover:border-blue-500 hover:text-blue-600 transition-all duration-300 hover:scale-105 px-6 py-3"
-                  >
-                    <Settings className="h-5 w-5 mr-2" />
-                    Settings
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex space-x-3">
-                  <Button
-                    onClick={handleUpdateProfile}
-                    className="bg-green-600 hover:bg-green-700 transition-all duration-300 hover:scale-105 px-6 py-3 font-semibold"
-                  >
-                    <Save className="h-5 w-5 mr-2" />
-                    Save Changes
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setIsEditing(false);
-                      setEditForm({
-                        full_name: profile?.full_name || '',
-                        bio: profile?.bio || ''
-                      });
-                    }}
-                    variant="outline"
-                    className="border-2 border-gray-300 hover:border-red-500 hover:text-red-600 transition-all duration-300"
-                  >
-                    <X className="h-5 w-5 mr-2" />
-                    Cancel
-                  </Button>
-                </div>
-              )}
+            {/* Stats Section */}
+            <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t border-slate-700">
+              <button className="text-center group cursor-pointer transition-all duration-300 hover:scale-105">
+                <div className="text-lg lg:text-xl font-bold text-white">{stats.posts}</div>
+                <div className="text-xs lg:text-sm text-slate-400">Posts</div>
+              </button>
+              <button className="text-center group cursor-pointer transition-all duration-300 hover:scale-105">
+                <div className="text-lg lg:text-xl font-bold text-white">{stats.connections}</div>
+                <div className="text-xs lg:text-sm text-slate-400">Connections</div>
+              </button>
+              <button className="text-center group cursor-pointer transition-all duration-300 hover:scale-105">
+                <div className="text-lg lg:text-xl font-bold text-white">{stats.following}</div>
+                <div className="text-xs lg:text-sm text-slate-400">Following</div>
+              </button>
+              <button className="text-center group cursor-pointer transition-all duration-300 hover:scale-105">
+                <div className="text-lg lg:text-xl font-bold text-white">{stats.followers}</div>
+                <div className="text-xs lg:text-sm text-slate-400">Followers</div>
+              </button>
             </div>
+          </CardContent>
+        </AnimatedCard>
+
+        {/* Posts Section */}
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl lg:text-2xl font-bold text-white flex items-center space-x-3">
+              <span>Your Posts ({stats.posts})</span>
+            </h2>
           </div>
 
-          {/* Enhanced Stats Section */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mt-8 pt-8 border-t border-gray-200">
-            <div className="text-center group cursor-pointer">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-4 group-hover:scale-110 transition-transform duration-300">
-                <div className="text-3xl font-bold">{stats.posts}</div>
-                <div className="text-blue-100">Posts</div>
-              </div>
+          {posts.length === 0 ? (
+            <AnimatedCard className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
+              <CardContent className="text-center py-16">
+                <div className="space-y-6">
+                  <div className="relative inline-block">
+                    <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full w-24 h-24 flex items-center justify-center mx-auto animate-pulse">
+                      <Briefcase className="h-10 w-10 text-blue-400" />
+                    </div>
+                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce">
+                      <Star className="w-4 h-4 text-yellow-800" />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <h3 className="text-2xl font-bold text-white">Ready to Share Your Story?</h3>
+                    <p className="text-slate-400 text-lg max-w-md mx-auto">
+                      Your first post is waiting! Share your thoughts, achievements, or insights with the community.
+                    </p>
+                  </div>
+                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-3 text-lg hover:scale-105 transition-all duration-300">
+                    Create Your First Post ✨
+                  </Button>
+                </div>
+              </CardContent>
+            </AnimatedCard>
+          ) : (
+            <div className="space-y-6">
+              {posts.map((post, index) => (
+                <div
+                  key={post.id}
+                  className="animate-fade-in"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <AnimatedCard className="bg-slate-800/50 backdrop-blur-sm border-slate-700">
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="w-10 h-10">
+                            <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold">
+                              {profile?.full_name?.split(' ').map((n: string) => n[0]).join('') || 
+                               user.email?.charAt(0).toUpperCase() || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-white">
+                              {profile?.full_name || user.email?.split('@')[0] || 'User'}
+                            </p>
+                            <p className="text-sm text-slate-400">
+                              {new Date(post.created_at).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        {isOwnProfile && (
+                          <Button
+                            onClick={() => handlePostDeleted(post.id)}
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      <div className="text-slate-200 whitespace-pre-wrap leading-relaxed">
+                        {post.content}
+                      </div>
+                    </CardContent>
+                  </AnimatedCard>
+                </div>
+              ))}
             </div>
-            <div className="text-center group cursor-pointer">
-              <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl p-4 group-hover:scale-110 transition-transform duration-300">
-                <div className="text-3xl font-bold">{stats.connections}</div>
-                <div className="text-green-100">Connections</div>
-              </div>
-            </div>
-            <div className="text-center group cursor-pointer">
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl p-4 group-hover:scale-110 transition-transform duration-300">
-                <div className="text-3xl font-bold">{stats.following}</div>
-                <div className="text-purple-100">Following</div>
-              </div>
-            </div>
-            <div className="text-center group cursor-pointer">
-              <div className="bg-gradient-to-br from-pink-500 to-pink-600 text-white rounded-xl p-4 group-hover:scale-110 transition-transform duration-300">
-                <div className="text-3xl font-bold">{stats.followers}</div>
-                <div className="text-pink-100">Followers</div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </AnimatedCard>
-
-      {/* Posts Section */}
-      <div>
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 gradient-text flex items-center space-x-3">
-            <Activity className="w-8 h-8 text-blue-600" />
-            <span>Your Posts</span>
-            <span className="text-lg text-gray-500">({stats.posts})</span>
-          </h2>
+          )}
         </div>
-
-        {posts.length === 0 ? (
-          <AnimatedCard>
-            <CardContent className="text-center py-16">
-              <div className="space-y-6">
-                <div className="relative inline-block">
-                  <div className="bg-gradient-to-br from-blue-100 to-purple-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto animate-pulse">
-                    <Briefcase className="h-10 w-10 text-blue-600" />
-                  </div>
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce">
-                    <Star className="w-4 h-4 text-yellow-800" />
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <h3 className="text-2xl font-bold text-gray-800">Ready to Share Your Story?</h3>
-                  <p className="text-gray-600 text-lg max-w-md mx-auto">
-                    Your first post is waiting! Share your thoughts, achievements, or insights with the community.
-                  </p>
-                </div>
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-3 text-lg hover:scale-105 transition-all duration-300">
-                  Create Your First Post ✨
-                </Button>
-              </div>
-            </CardContent>
-          </AnimatedCard>
-        ) : (
-          <div className="space-y-8">
-            {posts.map((post, index) => (
-              <div
-                key={post.id}
-                className="animate-fade-in"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <PostCard 
-                  post={post} 
-                  currentUserId={user?.email}
-                  onDelete={handlePostDeleted}
-                />
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
